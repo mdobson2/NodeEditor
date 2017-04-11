@@ -7,7 +7,7 @@ public class NodeEditor : EditorWindow {
 
     //Rect myRect = new Rect(10, 10, 100, 100);
 
-    List<Rect> myWindows = new List<Rect>();
+    List<NodeBaseClass> myWindows = new List<NodeBaseClass>();
 
     [MenuItem("Window/Node Editor")]
 	public static void GetWindow()
@@ -17,34 +17,32 @@ public class NodeEditor : EditorWindow {
 
     void OnGUI()
     {
-        if(myWindows.Count > 1)
-        {
-            DrawNodeConnection(myWindows[0], myWindows[1]);
-        }
-        if(GUILayout.Button("Add Node"))
-        {
-            myWindows.Add(new Rect(10, 20, 100, 100));
-        }
-        //begins a new window in the window that we are drawing
-        BeginWindows();
         for(int i = 0; i < myWindows.Count; i++)
         {
-            myWindows[i] = GUI.Window(i, myWindows[i], DrawWindow, "Window " + i);
+            for(int j = 0; j < myWindows[i].linkedNodes.Count; j++)
+            {
+                DrawNodeConnection(myWindows[i].rect, myWindows[i].linkedNodes[j].rect);
+            }
         }
-        //myRect = GUI.Window(0, myRect, DrawWindow, "Title");
-        EndWindows();
-    }
 
-    void DrawWindow(int id)
-    {
-        Color temp = GUI.backgroundColor;
-        GUI.backgroundColor = Color.red;
-        if(GUI.Button(new Rect(myWindows[id].width-18,-1, 18, 18),"X"))
+        BeginWindows();
+
+        if(GUILayout.Button("Add Node"))
         {
-            myWindows.RemoveAt(id);
+            myWindows.Add(new NodeBaseClass(new Rect(10, 10, 100, 100), myWindows.Count));
+            myWindows[myWindows.Count - 1].CloseFunction = RemoveNode;
+            if(myWindows.Count > 1)
+            {
+                myWindows[myWindows.Count - 2].AttachNode(myWindows[myWindows.Count - 1]);
+            }
         }
-        GUI.backgroundColor = temp;
-        GUI.DragWindow();
+        //begins a new window in the window that we are drawing
+        for(int i = 0; i < myWindows.Count; i++)
+        {
+            myWindows[i].rect = GUI.Window(i, myWindows[i].rect, myWindows[i].DrawGUI , myWindows[i].title);
+        }
+
+        EndWindows();
     }
 
     void DrawNodeConnection(Rect start, Rect end)
@@ -55,5 +53,29 @@ public class NodeEditor : EditorWindow {
         Vector3 endTan = endPos + Vector3.left * 50;
 
         Handles.DrawBezier(startPos, endPos, startTan, endTan, Color.white, null, 2);
+    }
+
+    public void RemoveNode(NodeBaseClass node)
+    {
+        for(int i = 0; i < myWindows.Count; i++)
+        {
+            for(int j = 0; j < myWindows[i].linkedNodes.Count; j++)
+            {
+                if(myWindows[i].linkedNodes[j].id == node.id)
+                {
+                    myWindows[i].linkedNodes.RemoveAt(j);
+                }
+            }
+        }
+        myWindows.RemoveAt(node.id);
+        ReassignNodes();
+    }
+
+    public void ReassignNodes()
+    {
+        for(int i = 0; i < myWindows.Count; i++)
+        {
+            myWindows[i].id = i;
+        }
     }
 }
